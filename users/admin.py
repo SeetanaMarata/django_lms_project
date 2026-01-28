@@ -41,3 +41,21 @@ class CustomUserAdmin(UserAdmin):
             },
         ),
     )
+
+
+from .models import Payment  # Добавь этот импорт вверху файла
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "payment_date",
+        "course",
+        "lesson",
+        "amount",
+        "payment_method",
+    )
+    list_filter = ("payment_method", "payment_date", "course", "lesson")
+    search_fields = ("user__email", "course__title", "lesson__title")
+    date_hierarchy = "payment_date"
