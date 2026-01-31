@@ -5,12 +5,12 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from materials.views import CourseViewSet
-from users.views import UserViewSet
+from users.views import PaymentViewSet, UserViewSet
 
 router = DefaultRouter()
 router.register(r"users", UserViewSet)
 router.register(r"courses", CourseViewSet)
-
+router.register(r"payments", PaymentViewSet)
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include(router.urls)),
