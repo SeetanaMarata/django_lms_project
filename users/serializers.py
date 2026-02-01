@@ -1,53 +1,53 @@
 from rest_framework import serializers
 
-from .models import Payment, User  # Добавляем User в импорт
+from .models import Payment, User
 
 
-class UserSerializer(serializers.ModelSerializer):
-    # Добавляем это поле для истории платежей
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = "__all__"
+
+
+# !!! СТАРЫЙ UserSerializer переименуем в UserDetailSerializer !!!
+class UserDetailSerializer(serializers.ModelSerializer):
+    """
+    Полная информация о пользователе (для владельца и модераторов).
+    """
+
     payment_history = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = [
+        fields = (
             "id",
             "email",
-            "first_name",
-            "last_name",
             "phone",
             "city",
             "avatar",
+            "first_name",
+            "last_name",
+            "password",
             "payment_history",
-        ]
-        read_only_fields = ["payment_history"]
+        )
+        extra_kwargs = {"password": {"write_only": True}}
 
     def get_payment_history(self, obj):
-        # Получаем последние 10 платежей пользователя
+        """
+        Возвращает историю платежей пользователя
+        """
         payments = obj.payments.all().order_by("-payment_date")[:10]
         return PaymentSerializer(payments, many=True).data
 
 
-class PaymentSerializer(serializers.ModelSerializer):
-    user_email = serializers.CharField(source="user.email", read_only=True)
-    course_title = serializers.CharField(
-        source="course.title", read_only=True, allow_null=True
-    )
-    lesson_title = serializers.CharField(
-        source="lesson.title", read_only=True, allow_null=True
-    )
+# !!! СОЗДАЕМ НОВЫЙ ДЛЯ ПУБЛИЧНОГО ПРОСМОТРА !!!
+class UserPublicSerializer(serializers.ModelSerializer):
+    """
+    Публичная информация о пользователе (для просмотра другими пользователями).
+    Не включает: пароль, фамилию, историю платежей.
+    """
 
     class Meta:
-        model = Payment
-        fields = [
-            "id",
-            "user",
-            "user_email",
-            "payment_date",
-            "course",
-            "course_title",
-            "lesson",
-            "lesson_title",
-            "amount",
-            "payment_method",
-        ]
-        read_only_fields = ["payment_date"]
+        model = User
+        fields = ("id", "email", "phone", "city", "avatar", "first_name")
+        read_only_fields = fields  # Все поля только для чтения
