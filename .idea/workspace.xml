@@ -5,25 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="87d55070-1ce0-415c-a239-093db64a5870" name="Changes" comment="Add gitignore">
-      <change afterPath="$PROJECT_DIR$/.idea/django_lms_project.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/materials/migrations/0002_course_owner_lesson_owner_alter_course_preview_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/users/management/commands/create_groups.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/users/permissions.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/users/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/django_lms_project/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/django_lms_project/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/django_lms_project/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/django_lms_project/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/materials/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/materials/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/materials/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/materials/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/materials/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/materials/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/poetry.lock" beforeDir="false" afterPath="$PROJECT_DIR$/poetry.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pyproject.toml" beforeDir="false" afterPath="$PROJECT_DIR$/pyproject.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users/serializers.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/serializers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/users/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/users/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

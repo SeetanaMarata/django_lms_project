@@ -74,9 +74,13 @@ WSGI_APPLICATION = "django_lms_project.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'django_lms_db',        # Имя базы
+        'USER': 'django_user',
+        'PASSWORD': 'simple_password',      # ТОЧНО ТАКОЙ ЖЕ пароль как при установке
+        'HOST': 'localhost',             # Хост
+        'PORT': '5432',                  # Порт
     }
 }
 
