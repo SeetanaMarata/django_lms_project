@@ -1,3 +1,4 @@
+# materials/urls.py (ТОЛЬКО УРОКИ)
 from django.urls import path
 
 from .views import LessonListCreateAPIView, LessonRetrieveUpdateDestroyAPIView
