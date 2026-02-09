@@ -1,6 +1,8 @@
 import json
 
 from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,11 +13,68 @@ from .serializers import SubscriptionSerializer
 
 class SubscriptionAPIView(APIView):
     """
-    API для управления подпиской пользователя на курс
+    API для управления подпиской пользователя на курс.
+
+    Методы:
+    - POST: Подписаться/отписаться от курса
+
+    Пример запроса:
+    ```json
+    {
+        "course_id": 1
+    }
+    ```
+
+    Пример ответа при успешной подписке:
+    ```json
+    {
+        "message": "Подписка добавлена"
+    }
+    ```
+
+    Пример ответа при отписке:
+    ```json
+    {
+        "message": "Подписка удалена"
+    }
+    ```
     """
 
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        tags=["Подписки"],
+        operation_description="Подписаться или отписаться от курса",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=["course_id"],
+            properties={
+                "course_id": openapi.Schema(
+                    type=openapi.TYPE_INTEGER,
+                    description="ID курса для подписки/отписки",
+                )
+            },
+            example={"course_id": 1},
+        ),
+        responses={
+            200: openapi.Response(
+                description="Подписка удалена",
+                examples={"application/json": {"message": "Подписка удалена"}},
+            ),
+            201: openapi.Response(
+                description="Подписка добавлена",
+                examples={"application/json": {"message": "Подписка добавлена"}},
+            ),
+            400: openapi.Response(
+                description="Ошибка валидации",
+                examples={"application/json": {"error": "course_id обязателен"}},
+            ),
+            404: openapi.Response(
+                description="Курс не найден",
+                examples={"application/json": {"error": "Курс не найден"}},
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         print(f"=== DEBUG SubscriptionAPIView ===")
         print(f"Пользователь: {request.user.email}")
