@@ -51,3 +51,46 @@ class UserPublicSerializer(serializers.ModelSerializer):
         model = User
         fields = ("id", "email", "phone", "city", "avatar", "first_name")
         read_only_fields = fields  # Все поля только для чтения
+
+
+class PaymentCreateSerializer(serializers.ModelSerializer):
+    """
+    Сериализатор для создания платежа через Stripe.
+    """
+
+    course_id = serializers.IntegerField(write_only=True, required=False)
+    lesson_id = serializers.IntegerField(write_only=True, required=False)
+
+    class Meta:
+        model = Payment
+        fields = ("course_id", "lesson_id", "amount", "payment_method")
+        read_only_fields = (
+            "user",
+            "payment_date",
+            "stripe_product_id",
+            "stripe_price_id",
+            "stripe_session_id",
+            "stripe_payment_status",
+            "stripe_payment_url",
+        )
+
+    def validate(self, data):
+        """
+        Валидация: должен быть указан либо курс, либо урок.
+        """
+        course_id = data.get("course_id")
+        lesson_id = data.get("lesson_id")
+
+        if not course_id and not lesson_id:
+            raise serializers.ValidationError(
+                "Необходимо указать course_id или lesson_id"
+            )
+
+        if course_id and lesson_id:
+            raise serializers.ValidationError("Укажите только курс ИЛИ урок")
+
+        return data
+
+    def create(self, validated_data):
+        # Этот метод будет переопределен во view
+        pass

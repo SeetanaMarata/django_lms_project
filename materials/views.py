@@ -1,3 +1,5 @@
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, permissions, viewsets
 
 from users.permissions import IsModerator, IsOwner
@@ -8,6 +10,23 @@ from .serializers import CourseSerializer, LessonSerializer
 
 
 class CourseViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet для работы с курсами.
+
+    Доступные действия:
+    - list: Получить список курсов (с пагинацией)
+    - retrieve: Получить детальную информацию о курсе
+    - create: Создать новый курс (только для авторизованных пользователей)
+    - update: Обновить курс (только владелец или модератор)
+    - partial_update: Частично обновить курс
+    - destroy: Удалить курс (только владелец)
+
+    Поля в сериализаторе:
+    - lessons_count: количество уроков в курсе (автоматически)
+    - lessons: список уроков курса
+    - is_subscribed: подписан ли текущий пользователь на курс
+    """
+
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.IsAuthenticated]
