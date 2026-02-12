@@ -8,6 +8,11 @@ from .models import Course, Lesson
 from .paginators import MaterialsPagination
 from .serializers import CourseSerializer, LessonSerializer
 
+from django.utils import timezone
+from datetime import timedelta
+from .models import Subscription
+from .tasks import send_course_update_email
+
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -73,20 +78,15 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
-        """
-        Проверяем права на обновление.
-        """
-        instance = self.get_object()
-        user = self.request.user
+        course = serializer.save()
 
-        # Модератор или владелец может обновлять
-        if not (
-            user.groups.filter(name="moderators").exists() or instance.owner == user
-        ):
-            raise permissions.PermissionDenied(
-                "У вас нет прав для редактирования этого курса"
-            )
-        serializer.save()
+        # Получаем всех подписчиков курса
+        subscriptions = Subscription.objects.filter(course=course)
+        emails = subscriptions.values_list('user__email', flat=True)
+
+        # Отправляем письма асинхронно
+        for email in emails:
+            send_course_update_email.delay(course.title, email)
 
     def perform_destroy(self, instance):
         """
@@ -137,29 +137,36 @@ class LessonRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-
-        # Если пользователь модератор - видит все уроки
         if self.request.user.groups.filter(name="moderators").exists():
             return queryset
-
-        # Иначе видит только свои уроки
         return queryset.filter(owner=self.request.user)
 
     def perform_update(self, serializer):
-        """
-        Проверяем права на обновление.
-        """
+        """Проверяем 4 часа и отправляем уведомления"""
         instance = self.get_object()
         user = self.request.user
 
-        # Модератор или владелец может обновлять
-        if not (
-            user.groups.filter(name="moderators").exists() or instance.owner == user
-        ):
-            raise permissions.PermissionDenied(
-                "У вас нет прав для редактирования этого урока"
-            )
-        serializer.save()
+        # Проверка прав
+        if not (user.groups.filter(name="moderators").exists() or instance.owner == user):
+            raise permissions.PermissionDenied("Нет прав для редактирования")
+
+        # Сохраняем урок
+        lesson = serializer.save()
+
+        # Проверяем курс
+        course = lesson.course
+        time_since_update = timezone.now() - course.updated_at
+
+        # Если курс не обновлялся > 4 часов
+        if time_since_update > timedelta(hours=4):
+            # Отправляем письма подписчикам
+            emails = Subscription.objects.filter(course=course).values_list('user__email', flat=True)
+            for email in emails:
+                send_course_update_email.delay(course.title, email)
+
+            # Обновляем время курса
+            course.updated_at = timezone.now()
+            course.save(update_fields=['updated_at'])
 
     def perform_destroy(self, instance):
         """

@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     # Local apps
     "users",
     "materials",
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -162,3 +164,34 @@ REDOC_SETTINGS = {
 # Stripe settings
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
+
+import os
+
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Europe/Moscow'  # Или твоя временная зона
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'test-task-every-minute': {
+        'task': 'materials.tasks.test_task',
+        'schedule': crontab(minute='*/1'),
+    },
+    'deactivate-inactive-users-daily': {
+        'task': 'users.tasks.deactivate_inactive_users',
+        'schedule': crontab(hour=0, minute=0),  # Каждый день в полночь
+    },
+}
+
+import os
+
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL') == 'True'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
