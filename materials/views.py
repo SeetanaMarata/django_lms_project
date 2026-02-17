@@ -1,16 +1,15 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics, permissions, viewsets
 
 from users.permissions import IsModerator, IsOwner
 
-from .models import Course, Lesson
+from .models import Course, Lesson, Subscription
 from .paginators import MaterialsPagination
 from .serializers import CourseSerializer, LessonSerializer
-
-from django.utils import timezone
-from datetime import timedelta
-from .models import Subscription
 from .tasks import send_course_update_email
 
 
@@ -82,7 +81,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         # Получаем всех подписчиков курса
         subscriptions = Subscription.objects.filter(course=course)
-        emails = subscriptions.values_list('user__email', flat=True)
+        emails = subscriptions.values_list("user__email", flat=True)
 
         # Отправляем письма асинхронно
         for email in emails:
@@ -147,7 +146,9 @@ class LessonRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
 
         # Проверка прав
-        if not (user.groups.filter(name="moderators").exists() or instance.owner == user):
+        if not (
+            user.groups.filter(name="moderators").exists() or instance.owner == user
+        ):
             raise permissions.PermissionDenied("Нет прав для редактирования")
 
         # Сохраняем урок
@@ -160,13 +161,15 @@ class LessonRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
         # Если курс не обновлялся > 4 часов
         if time_since_update > timedelta(hours=4):
             # Отправляем письма подписчикам
-            emails = Subscription.objects.filter(course=course).values_list('user__email', flat=True)
+            emails = Subscription.objects.filter(course=course).values_list(
+                "user__email", flat=True
+            )
             for email in emails:
                 send_course_update_email.delay(course.title, email)
 
             # Обновляем время курса
             course.updated_at = timezone.now()
-            course.save(update_fields=['updated_at'])
+            course.save(update_fields=["updated_at"])
 
     def perform_destroy(self, instance):
         """

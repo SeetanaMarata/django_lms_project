@@ -1,6 +1,8 @@
+from datetime import timedelta
+
 from celery import shared_task
 from django.utils import timezone
-from datetime import timedelta
+
 from users.models import User
 
 
@@ -14,10 +16,7 @@ def deactivate_inactive_users():
     # Ищем пользователей, которые:
     # 1. Не заходили больше месяца
     # 2. Ещё активны
-    inactive_users = User.objects.filter(
-        last_login__lt=month_ago,
-        is_active=True
-    )
+    inactive_users = User.objects.filter(last_login__lt=month_ago, is_active=True)
 
     count = inactive_users.count()
     inactive_users.update(is_active=False)
