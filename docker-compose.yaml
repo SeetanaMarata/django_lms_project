@@ -1,0 +1,55 @@
+# docker-compose.yaml
+# version: '3.8'
+
+services:
+  # Сервис базы данных
+  db:
+    # Используем готовый образ PostgreSQL 15
+    image: postgres:15-alpine
+    # Имя контейнера для удобства
+    container_name: lms_db
+    # Файл с переменными окружения (пароль, пользователь)
+    env_file:
+      - .env
+    # Порты: снаружи (на твоей машине) порт 5433, внутри контейнера стандартный 5432.
+    # Это чтобы не конфликтовать с локальным PostgreSQL, если он у тебя есть.
+    ports:
+      - "5433:5432"
+    # Тома (volumes) для хранения данных БД, чтобы они не пропадали при перезапуске контейнера
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    # Здоровье контейнера: проверяем, что БД готова принимать подключения
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Сервис самого Django-приложения
+  backend:
+    # Собираем образ из Dockerfile, который мы скоро создадим
+    build: .
+    # Имя контейнера
+    container_name: lms_backend
+    # Команда для запуска приложения (пока простой сервер, потом добавим миграции)
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    # Какие контейнеры должны быть запущены до этого
+    depends_on:
+      db:
+        condition: service_healthy
+    # Порты: наружу 8000, внутрь 8000
+    ports:
+      - "8000:8000"
+    # Файл с переменными окружения (настройки Django, пароли от БД)
+    env_file:
+      - .env
+    # Тома для разработки: монтируем текущую папку внутрь контейнера.
+    # Это позволит менять код и не пересобирать образ.
+    volumes:
+      - .:/app
+
+# Определяем том для данных PostgreSQL, который мы использовали выше
+volumes:
+  postgres_data:
