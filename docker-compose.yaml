@@ -1,55 +1,101 @@
-# docker-compose.yaml
-# version: '3.8'
-
 services:
-  # Сервис базы данных
+  # Сервис базы данных PostgreSQL
   db:
-    # Используем готовый образ PostgreSQL 15
     image: postgres:15-alpine
-    # Имя контейнера для удобства
     container_name: lms_db
-    # Файл с переменными окружения (пароль, пользователь)
     env_file:
       - .env
-    # Порты: снаружи (на твоей машине) порт 5433, внутри контейнера стандартный 5432.
-    # Это чтобы не конфликтовать с локальным PostgreSQL, если он у тебя есть.
     ports:
       - "5433:5432"
-    # Тома (volumes) для хранения данных БД, чтобы они не пропадали при перезапуске контейнера
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    # Здоровье контейнера: проверяем, что БД готова принимать подключения
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - lms_network
 
-  # Сервис самого Django-приложения
+  # Redis для Celery
+  redis:
+    image: redis:7-alpine
+    container_name: lms_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lms_network
+
+  # Django-приложение
   backend:
-    # Собираем образ из Dockerfile, который мы скоро создадим
     build: .
-    # Имя контейнера
     container_name: lms_backend
-    # Команда для запуска приложения (пока простой сервер, потом добавим миграции)
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
-    # Какие контейнеры должны быть запущены до этого
     depends_on:
       db:
         condition: service_healthy
-    # Порты: наружу 8000, внутрь 8000
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
-    # Файл с переменными окружения (настройки Django, пароли от БД)
     env_file:
       - .env
-    # Тома для разработки: монтируем текущую папку внутрь контейнера.
-    # Это позволит менять код и не пересобирать образ.
     volumes:
       - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    networks:
+      - lms_network
 
-# Определяем том для данных PostgreSQL, который мы использовали выше
+  # Celery worker для асинхронных задач
+  celery:
+    build: .
+    container_name: lms_celery
+    command: celery -A django_lms_project worker --loglevel=info
+    depends_on:
+      - backend
+      - redis
+      - db
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - lms_network
+
+  # Celery beat для периодических задач
+  celery-beat:
+    build: .
+    container_name: lms_celery_beat
+    command: celery -A django_lms_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - backend
+      - redis
+      - db
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - lms_network
+
+# Определяем тома для данных
 volumes:
   postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+
+# Создаем сеть для взаимодействия сервисов
+networks:
+  lms_network:
+    driver: bridge
