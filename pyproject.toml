@@ -12,6 +12,15 @@ django = "^5.0"
 djangorestframework = "^3.16.1"
 pillow = "^12.1.0"
 python-dotenv = "^1.2.1"
+django-filter = "^25.2"
+djangorestframework-simplejwt = "^5.5.1"
+psycopg2-binary = "^2.9.11"
+drf-yasg = "^1.21.14"
+stripe = "^14.3.0"
+celery = "^5.4.0"
+redis = "^5.2.1"
+django-celery-beat = "^2.7.0"
+django-celery-results = "^2.5.0"
 
 
 [tool.poetry.group.lint.dependencies]

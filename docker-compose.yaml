@@ -1,0 +1,101 @@
+services:
+  # Сервис базы данных PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: lms_db
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lms_network
+
+  # Redis для Celery
+  redis:
+    image: redis:7-alpine
+    container_name: lms_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lms_network
+
+  # Django-приложение
+  backend:
+    build: .
+    container_name: lms_backend
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    networks:
+      - lms_network
+
+  # Celery worker для асинхронных задач
+  celery:
+    build: .
+    container_name: lms_celery
+    command: celery -A django_lms_project worker --loglevel=info
+    depends_on:
+      - backend
+      - redis
+      - db
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - lms_network
+
+  # Celery beat для периодических задач
+  celery-beat:
+    build: .
+    container_name: lms_celery_beat
+    command: celery -A django_lms_project beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - backend
+      - redis
+      - db
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    networks:
+      - lms_network
+
+# Определяем тома для данных
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+
+# Создаем сеть для взаимодействия сервисов
+networks:
+  lms_network:
+    driver: bridge
